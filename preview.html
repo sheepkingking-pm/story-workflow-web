@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>剧情成片半自动工作流 - 预览版</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: radial-gradient(circle at 8% 0%, rgba(88,130,255,.28), transparent 32%), #eef3ff;
+        color: #172033;
+        font-family: "PingFang SC", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      }
+      .page { min-height: 100vh; padding: 28px; }
+      .topbar, .progress, .overview, .workspace { max-width: 1180px; margin: 0 auto; }
+      .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+      .eyebrow { margin: 0 0 6px; color: #4d6cff; font-size: 13px; font-weight: 800; letter-spacing: .08em; }
+      h1, h2, h3, p { margin-top: 0; }
+      h1 { margin-bottom: 0; font-size: 34px; letter-spacing: -.04em; }
+      button, input, select, textarea { font: inherit; }
+      button { border: 0; }
+      .primary, .secondary {
+        min-height: 42px; padding: 0 18px; border-radius: 12px; cursor: pointer; font-weight: 800;
+      }
+      .primary { color: #fff; background: linear-gradient(135deg, #315dff, #7049ff); box-shadow: 0 12px 24px rgba(49,93,255,.22); }
+      .secondary { color: #315dff; background: #eef2ff; }
+      button:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+      .progress, .panel {
+        background: rgba(255,255,255,.92); border: 1px solid rgba(255,255,255,.72); border-radius: 24px;
+        box-shadow: 0 24px 70px rgba(64,83,140,.13); backdrop-filter: blur(18px);
+      }
+      .progress { padding: 18px 22px; margin-bottom: 18px; }
+      .progress-head { display: flex; justify-content: space-between; margin-bottom: 10px; color: #5d6b86; }
+      .progress-head strong { color: #315dff; }
+      .track { height: 10px; overflow: hidden; border-radius: 999px; background: #e3e9f8; }
+      .fill { height: 100%; width: 14%; border-radius: inherit; background: linear-gradient(90deg, #315dff, #39d6bd); transition: width .35s; }
+      .steps { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-top: 14px; }
+      .step { padding: 9px 10px; border-radius: 999px; color: #7b879e; background: #f4f7fc; font-size: 13px; text-align: center; }
+      .step.active { color: #2852ef; background: #e7edff; font-weight: 800; }
+      .workspace { display: flex; flex-direction: column; gap: 18px; }
+      .panel { position: relative; padding: 20px; }
+      .panel:not(:first-child)::before { content: ""; position: absolute; top: -18px; left: 36px; width: 2px; height: 18px; background: #cfd8ff; }
+      .panel-title { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+      .panel-title span { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 12px; color: #fff; background: #172033; font-weight: 900; }
+      .panel-title h2 { margin: 0; font-size: 18px; }
+      label { display: block; margin-bottom: 14px; color: #5b6680; font-size: 13px; font-weight: 800; }
+      .hint { display: block; margin-top: 7px; color: #8a95aa; font-size: 12px; font-weight: 500; line-height: 1.5; }
+      .style-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; margin-top: 8px; }
+      .style-option { display: flex; align-items: center; min-height: 44px; padding: 0 13px; border: 1px solid #dfe6f3; border-radius: 14px; color: #172033; background: #fff; cursor: pointer; font-weight: 800; }
+      .style-option.active { border-color: #7049ff; background: #f0edff; box-shadow: 0 8px 20px rgba(112,73,255,.14); }
+      .radio-dot { display: inline-block; width: 16px; height: 16px; margin-right: 10px; border: 2px solid #d8deea; border-radius: 999px; background: #fff; }
+      .style-option.active .radio-dot { border: 5px solid #7049ff; }
+      input, select, textarea {
+        width: 100%; margin-top: 7px; padding: 12px 13px; border: 1px solid #dfe6f3; border-radius: 13px;
+        outline: none; color: #172033; background: #f9fbff;
+      }
+      textarea { resize: vertical; line-height: 1.65; }
+      .upload {
+        display: grid; height: 178px; place-items: center; overflow: hidden; border: 1.5px dashed #9eafff;
+        border-radius: 18px; color: #315dff; background: linear-gradient(135deg,#f8faff,#edf2ff); cursor: pointer;
+      }
+      .upload input { display: none; }
+      .upload img { width: 100%; height: 100%; object-fit: cover; }
+      .inline { display: flex; gap: 10px; }
+      .inline label { flex: 1; }
+      .script-box textarea { min-height: 288px; }
+      .empty { display: grid; min-height: 288px; place-items: center; border: 1px dashed #d7dfef; border-radius: 18px; color: #7b879e; background: #f9fbff; }
+      .actions { display: flex; justify-content: flex-end; gap: 10px; margin: 14px 0 18px; }
+      .workspace > .panel:first-child { display: grid; grid-template-columns: 260px repeat(2,minmax(0,1fr)); gap: 0 18px; }
+      .workspace > .panel:first-child .panel-title, .workspace > .panel:first-child #generateScript { grid-column: 1 / -1; }
+      .workspace > .panel:first-child .upload { grid-row: span 4; }
+      .grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; }
+      .shot { overflow: hidden; border: 1px solid #e7edf7; border-radius: 18px; background: #fff; }
+      .cover {
+        position: relative; display: flex; align-items: flex-end; justify-content: space-between; min-height: 160px; overflow: hidden; padding: 14px; color: #fff;
+        background: linear-gradient(135deg, rgba(23,32,51,.22), rgba(23,32,51,.55)), linear-gradient(135deg,#7b8cff,#34d5ba);
+      }
+      .cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+      .cover-overlay { position: absolute; inset: 0; z-index: 1; display: flex; align-items: flex-end; justify-content: space-between; padding: 14px; background: linear-gradient(180deg, rgba(16,22,36,.05), rgba(16,22,36,.62)); }
+      .cover small { padding: 5px 9px; border-radius: 999px; background: rgba(255,255,255,.22); }
+      .body { padding: 14px; }
+      .head { display: flex; justify-content: space-between; margin-bottom: 9px; }
+      .head span { color: #315dff; font-weight: 900; }
+      .body p { color: #4a566d; line-height: 1.65; }
+      .mini { width: 100%; min-height: 36px; margin-top: 12px; border-radius: 10px; color: #315dff; background: #eef2ff; cursor: pointer; font-size: 13px; font-weight: 800; }
+      .compact { min-height: 120px; margin-bottom: 16px; text-align: center; }
+      .ref-section { margin: 0 0 16px; padding: 16px; border-radius: 18px; background: #f7f9ff; }
+      .frame-section { margin: 0 0 16px; padding: 16px; border-radius: 18px; background: #f7f9ff; }
+      .ref-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+      .ref-head h3 { margin: 0; font-size: 15px; }
+      .ref-head span { padding: 4px 9px; border-radius: 999px; color: #08a88a; background: #e9fbf6; font-size: 12px; font-weight: 800; }
+      .ref-grid { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 12px; margin-bottom: 14px; }
+      .ref-card { overflow: hidden; border: 1px solid #e7edf7; border-radius: 16px; background: #fff; }
+      .ref-card img { display: block; width: 100%; height: 128px; object-fit: cover; }
+      .ref-card div { padding: 12px; }
+      .ref-card p { margin: 7px 0; color: #4a566d; font-size: 13px; line-height: 1.5; }
+      .ref-card small { color: #8a95aa; word-break: break-all; }
+      .overview { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 10px; margin-bottom: 18px; }
+      .task { display: grid; gap: 8px; padding: 13px 14px; margin-bottom: 0; border-radius: 14px; background: #f7f9ff; }
+      .task strong { color: #7b879e; font-size: 13px; }
+      .task .ok { color: #08a88a; }
+      .timeline-card, .preview-card { padding: 16px; border-radius: 18px; background: #f7f9ff; }
+      .timeline { display: flex; gap: 4px; height: 42px; }
+      .clip { display: grid; min-width: 34px; place-items: center; border-radius: 10px; color: #fff; background: linear-gradient(135deg,#315dff,#39d6bd); font-weight: 900; }
+      .video-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; }
+      .video-card { overflow: hidden; border: 1px solid #e7edf7; border-radius: 18px; background: #fff; }
+      .video-cover { display: flex; align-items: flex-end; justify-content: space-between; min-height: 126px; padding: 14px; color: #fff; background: linear-gradient(180deg,rgba(16,22,36,.04),rgba(16,22,36,.72)), linear-gradient(135deg,#101624,#315dff); }
+      .video-cover small { padding: 5px 9px; border-radius: 999px; background: rgba(255,255,255,.2); }
+      .video-body { padding: 14px; }
+      .phone { display: grid; width: 190px; height: 338px; margin: 16px auto 0; padding: 12px; border: 8px solid #172033; border-radius: 34px; background: #101624; }
+      .screen { display: grid; place-items: center; border-radius: 24px; text-align: center; color: #a9b3c8; background: linear-gradient(180deg,#1e2638,#111827); }
+      .screen.done { padding: 18px; color: #fff; background: linear-gradient(135deg,#586dff,#28c7ac); }
+      .screen strong { font-size: 21px; }
+      @media (max-width: 1280px) { .workspace > .panel:first-child { display: block; } .grid, .ref-grid, .overview, .video-grid, .style-grid { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Story Commerce Agent</p>
+          <h1>剧情成片半自动工作流</h1>
+        </div>
+        <button class="primary" id="exportBtn" disabled>导出工程 JSON</button>
+      </header>
+
+      <section class="progress">
+        <div class="progress-head"><span id="stage">当前阶段：1/6</span><strong id="percent">8%</strong></div>
+        <div class="track"><div class="fill" id="fill"></div></div>
+        <div class="steps" id="steps"></div>
+      </section>
+
+      <section class="overview" id="tasks"></section>
+
+      <main class="workspace">
+        <section class="panel">
+          <div class="panel-title"><span>01</span><h2>商品理解</h2></div>
+          <label class="upload"><span id="uploadText">上传商品图</span><img id="preview" hidden /><input id="fileInput" type="file" accept="image/*" /></label>
+          <label>商品名称<input id="productName" value="多效合一气垫 BB" /></label>
+          <label>目标人群<input id="audience" value="25-35 岁通勤女性" /></label>
+          <label>核心卖点<textarea id="sellingPoints" rows="3">遮瑕、保湿、持妆、快速补妆</textarea></label>
+          <label style="grid-column:2/-1">风格需求<div class="style-grid" id="storyStyleGrid"></div><small class="hint" id="styleHint"></small></label>
+          <div class="inline"><label>时长<input id="duration" type="number" value="30" /></label><label>画幅<select id="ratio"><option>9:16</option><option>1:1</option><option>16:9</option></select></label></div>
+          <label>自然语言指令 / 额外要求<textarea id="extraInstruction" rows="4" placeholder="可输入约束或剧情梗概，例如：前三秒必须有冲突、女主被误会后反转、商品露出不要硬广、结尾引导小黄车。">剧情要有反转，商品露出自然，不要硬广。</textarea></label>
+          <button class="primary" style="width:100%" id="generateScript">完成商品理解并生成脚本</button>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title"><span>02</span><h2>脚本确认</h2></div>
+          <div class="script-box" id="scriptBox"><div class="empty">填写左侧 brief 后，点击“用 story-script-generator 生成脚本”。</div></div>
+          <div class="actions">
+            <button class="secondary" id="regen" disabled>重新生成</button>
+            <button class="primary" id="confirm" disabled>确认脚本，进入参考图确认</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title"><span>03</span><h2>参考图确认</h2></div>
+          <div id="references"></div>
+          <button class="primary" style="width:100%" id="refBtn" disabled>调用 Seadream 5.0 生成参考图</button>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title"><span>04</span><h2>分镜首帧图确认</h2></div>
+          <div id="frames"></div>
+          <button class="primary" style="width:100%" id="imageBtn" disabled>调用 Seadream 5.0 生成首帧图</button>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title"><span>05</span><h2>分镜生成</h2></div>
+          <div class="timeline-card"><h3>05 分镜生成</h3><div id="timeline">确认首帧图后调用 Seedance 2.0 生成分镜视频。</div></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title"><span>06</span><h2>成片</h2></div>
+          <div class="preview-card"><div class="phone"><div class="screen" id="screen">等待视频片段生成</div></div></div>
+          <button class="primary" style="width:100%; margin-top:16px" id="finalBtn" disabled>生成成片</button>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const state = { script: "", storyboard: [], refs: [], refStatus: "idle", images: [], image: "idle", clips: [], video: "idle", final: "idle", productImage: false, step: 1 };
+      const $ = (id) => document.getElementById(id);
+      const stepNames = ["商品理解", "脚本确认", "参考图确认", "首帧图确认", "分镜生成", "成片"];
+      const styleOptions = [
+        ["都市轻喜剧", "职场、通勤、约会救场，适合生活方式与美妆个护"],
+        ["追妻火葬场", "强情绪误会、反转和后悔流，适合高钩子短剧"],
+        ["古装宫斗", "后宫权谋、身份压制、逆袭打脸，适合戏剧化种草"],
+        ["宫廷斗争", "朝堂博弈、阵营对抗、权谋翻盘，适合强戏剧冲突"],
+        ["霸道总裁", "高势能男主、身份差、强反差宠爱，适合礼物/高客单商品"],
+        ["霸总甜宠", "强关系张力、宠爱反差、礼物种草，适合女性向商品"],
+        ["绿茶小三", "情感挑衅、真假对照、反击打脸，适合强爽点剧情"],
+        ["重生逆袭", "前世遗憾、重新选择、爽点复仇，适合功效对比"],
+        ["重生复仇", "前世背叛、重来复仇、层层清算，适合连续剧钩子"],
+        ["悬疑反转", "误导线索、结果反转、强完播，适合测评揭秘"],
+        ["家庭伦理", "婆媳、亲子、夫妻冲突，适合家清日百与食品"],
+        ["豪门恩怨", "继承、婚约、身份压制和翻盘，适合高戏剧化商品植入"],
+        ["校园青春", "暗恋、社团、毕业季，适合年轻化商品"],
+        ["青春暗恋", "双向暗恋、误会告白、清甜氛围，适合美妆服饰食品"],
+        ["职场逆袭", "面试、汇报、客户会救场，适合效率与形象类商品"],
+        ["职场爽剧", "被质疑、临场救场、结果打脸，适合强转化短视频"],
+        ["喜剧短剧", "误会、夸张反应、轻松包袱，适合泛生活类商品"],
+        ["泰式误会", "高情绪误解、狗血拉扯、夸张转折，适合强钩子开头"],
+        ["古装错位", "身份互换、错嫁替身、反差冲突，适合古风视觉创意"],
+        ["玄幻修仙", "金手指、升级、秘宝，适合夸张创意类短剧"],
+        ["末日生存", "资源稀缺、危机选择、生存装备，适合食品户外日用"],
+        ["未来科幻", "智能设备、未来城市、科技感卖点，适合数码家电"],
+        ["时间循环", "重复同一天、不断试错、找到解决方案，适合功能验证"],
+        ["探案解谜", "线索推理、真相揭晓，适合卖点拆解型脚本"],
+        ["娱乐综艺", "挑战任务、棚内反应、嘉宾种草，适合轻量测评"],
+        ["直播间反转", "弹幕质疑、现场试用、结果反转，适合电商转化"],
+        ["闺蜜种草", "朋友追问、真实分享、生活场景，适合低压种草"],
+        ["亲子育儿", "带娃痛点、家庭解决方案，适合母婴家居食品"],
+        ["银发生活", "父母健康、家庭关怀、实用改善，适合适老类商品"],
+        ["自动选择", "让 story-script-generator 根据商品、人群和卖点自动匹配风格"],
+        ["红果短剧爽文", "高密度冲突、打脸爽点、强 CTA，适合转化导向"],
+      ];
+      state.storyStyle = "都市轻喜剧";
+      function syncStyleHint() {
+        const selected = styleOptions.find(([value]) => value === state.storyStyle);
+        $("styleHint").textContent = selected?.[1] || "";
+        $("storyStyleGrid").innerHTML = styleOptions.map(([value]) => `<button class="style-option ${state.storyStyle === value ? "active" : ""}" type="button" onclick="selectStyle('${value}')"><span class="radio-dot"></span>${value}</button>`).join("");
+      }
+      function selectStyle(value) {
+        state.storyStyle = value;
+        syncStyleHint();
+      }
+      window.selectStyle = selectStyle;
+      syncStyleHint();
+      const readBrief = () => ({
+        productName: $("productName").value,
+        audience: $("audience").value,
+        sellingPoints: $("sellingPoints").value,
+        storyStyle: state.storyStyle,
+        duration: Number($("duration").value),
+        ratio: $("ratio").value,
+        extraInstruction: $("extraInstruction").value,
+      });
+      const scriptTpl = (b) => `## 抖音剧情带货脚本\n\n- 商品：${b.productName}\n- 时长：${b.duration}s\n- 平台：抖音\n- 目标人群：${b.audience}\n- 核心痛点：重要场合前妆面暗沉、状态疲惫、来不及完整化妆\n- 核心卖点：${b.sellingPoints}\n- 人物：女主 1 人，同事 1 人，客户/领导 1 人\n- 场景：办公室洗手间、会议室、会议室外走廊\n- 剧情模型：痛点救场 + 状态反转 + 同事追问种草\n- 剧情风格：${b.storyStyle}\n- 自然语言指令：${b.extraInstruction}\n- 转化目标：引导点击购物车/商品卡，突出通勤包常备\n\n### 一句话剧情\n\n女主下班前被临时通知参加重要客户会，脸上疲惫、妆面暗沉。她本想放弃，却在包里拿出「${b.productName}」快速补妆。三分钟后，她自信走进会议室，用专业表达扭转局面。结尾同事惊讶追问，她轻松展示商品，形成种草转化。\n\n### 分镜脚本\n\n| 时间 | 剧情画面 | 台词/字幕 | 商品露出 | 镜头/声音 |\n| --- | --- | --- | --- | --- |\n| 0-3s | 女主看着镜子里的疲惫妆面，手机弹出“客户会提前 3 分钟后开始” | 字幕：妆都花了，会议却提前了？ | 无 | 镜面近景，通知音，快速推近 |\n| 3-8s | 女主翻包，表情慌张，同事在门口催她 | 同事：快点，客户已经到了！ | 包中弱露出 | 手持快切，制造紧张 |\n| 8-16s | 女主拿出${b.productName}，打开粉扑轻拍补妆 | 女主：三分钟，够不够把状态救回来？ | 产品正面特写 | 产品开盖声，脸部/手部特写 |\n| 16-24s | 妆面从暗沉变得更自然，女主整理外套走向会议室 | 字幕：遮瑕、保湿、持妆，通勤补妆不用慌 | 强露出 + 使用动作 | 前后状态对比，节奏加快 |\n| 24-${b.duration}s | 女主会议表现从容，结束后同事追问，她笑着拿出商品 | 女主：不是换了人，是换回我的状态。小黄车有。 | 结尾商品定格 | 音乐起，商品卡/CTA 字幕 |\n\n### 备选开头\n- 痛点型：妆花了不可怕，可怕的是客户已经到门口了。\n- 反差型：三分钟前她还想逃会，三分钟后客户主动点头。\n- 冲突型：同事一句“你现在这样能见客户吗？”直接把她问懵。\n- 结果前置型：她只补了 3 分钟，客户却以为她准备了一下午。\n\n### CTA 版本\n- 想把状态随身带着的，直接看小黄车。\n- 通勤包里放一个，临时救场真的省心。\n- 今天有活动，想试的别等妆花了再想起它。\n\n### 拍摄建议\n- 人物控制在 2-3 个，尽量用办公室一个主场景完成。\n- 商品至少出现 3 次：包内弱露出、使用强露出、结尾定格。\n- 避免绝对化功效表达，用“状态更自然”“日常补妆更省心”等合规表达。\n\n### 自然语言指令\n${b.extraInstruction}`;
+      const shotsTpl = (b) => [
+        ["疲惫钩子", 4, "女主看着暗沉妆面，手机弹出客户会提前提醒。"],
+        ["三分钟补救", 6, `女主从包里拿出${b.productName}，轻拍脸颊完成补妆。`],
+        ["状态反转", 7, "女主从容走进会议室，妆面自然透亮，客户抬头关注。"],
+        ["同事追问", 6, "同事惊讶追问女主状态变化，女主笑着拿出商品。"],
+        ["转化收口", 7, `商品置于通勤包旁，字幕展示“${b.sellingPoints}”。`],
+      ].map((item, index) => ({ id: index + 1, title: item[0], duration: item[1], visual: item[2] }));
+      const refTemplates = [
+        { id: "character_01", type: "character", name: "女主角色图", usage: "主角一致性，通勤女性，白衬衫，低马尾" },
+        { id: "character_02", type: "character", name: "同事角色图", usage: "配角一致性，职场同事，轻喜剧反应" },
+        { id: "scene_01", type: "scene", name: "办公室洗手间", usage: "钩子与补妆场景" },
+        { id: "scene_02", type: "scene", name: "会议室", usage: "状态反转与客户会议场景" },
+        { id: "scene_03", type: "scene", name: "走廊/收口场景", usage: "同事追问与商品种草场景" },
+      ];
+      function mockRefUrl(asset, seed) {
+        const bg = asset.type === "character" ? "#586dff" : "#28c7ac";
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="720" height="960" viewBox="0 0 720 960"><defs><linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="${bg}"/><stop offset="1" stop-color="#101624"/></linearGradient></defs><rect width="720" height="960" fill="url(#bg)"/><rect x="72" y="132" width="576" height="560" rx="44" fill="rgba(255,255,255,0.16)"/><circle cx="360" cy="324" r="96" fill="rgba(255,255,255,0.22)"/><rect x="230" y="450" width="260" height="150" rx="75" fill="rgba(255,255,255,0.18)"/><text x="360" y="760" fill="white" font-family="Arial" font-size="42" font-weight="700" text-anchor="middle">${asset.name}</text><text x="360" y="820" fill="rgba(255,255,255,0.78)" font-family="Arial" font-size="24" text-anchor="middle">${asset.id} · seed ${seed}</text></svg>`;
+        return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+      }
+      function buildRef(asset, index, revision = 1) {
+        const seed = 2026062300 + index + (revision - 1) * 100;
+        return {
+          ...asset,
+          status: "done",
+          seed,
+          revision,
+          imageUrl: mockRefUrl(asset, seed),
+          outputPath: `storyboard_references/${asset.type}s/${asset.id}_v${revision}.png`,
+        };
+      }
+      function mockImageUrl(shot, seed) {
+        const colors = ["#586dff", "#28c7ac", "#7049ff", "#ff9f43", "#2f80ed"];
+        const bg = colors[(shot.id - 1) % colors.length];
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1280" viewBox="0 0 720 1280"><defs><linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="${bg}"/><stop offset="1" stop-color="#101624"/></linearGradient></defs><rect width="720" height="1280" fill="url(#bg)"/><circle cx="570" cy="180" r="150" fill="rgba(255,255,255,0.14)"/><rect x="90" y="260" width="540" height="620" rx="42" fill="rgba(255,255,255,0.16)"/><text x="360" y="430" fill="white" font-family="Arial" font-size="54" font-weight="700" text-anchor="middle">Shot ${shot.id}</text><text x="360" y="520" fill="white" font-family="Arial" font-size="34" font-weight="700" text-anchor="middle">${shot.title}</text><text x="360" y="610" fill="rgba(255,255,255,0.82)" font-family="Arial" font-size="24" text-anchor="middle">seadream5.0 preview</text><text x="360" y="704" fill="rgba(255,255,255,0.72)" font-family="Arial" font-size="22" text-anchor="middle">seed ${seed}</text><rect x="130" y="955" width="460" height="96" rx="48" fill="rgba(255,255,255,0.2)"/><text x="360" y="1016" fill="white" font-family="Arial" font-size="26" font-weight="700" text-anchor="middle">首帧分镜图</text></svg>`;
+        return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+      }
+      function buildImage(shot, index, revision = 1) {
+        const seed = 2026062200 + index + (revision - 1) * 100;
+        return {
+          shotId: shot.id,
+          status: "done",
+          seed,
+          revision,
+          imageUrl: mockImageUrl(shot, seed),
+          outputPath: `storyboard_images/frame_${String(index + 1).padStart(2, "0")}_v${revision}.png`,
+        };
+      }
+      function buildClip(shot, index, revision = 1) {
+        const seed = 2026062400 + index + (revision - 1) * 100;
+        return {
+          shotId: shot.id,
+          status: "done",
+          model: "seedance2.0",
+          seed,
+          revision,
+          duration: shot.duration,
+          outputPath: `storyboard_videos/shot_${String(index + 1).padStart(2, "0")}_v${revision}.mp4`,
+        };
+      }
+      function regenerateShot(id) {
+        const shot = state.storyboard.find((item) => item.id === id);
+        const index = state.storyboard.findIndex((item) => item.id === id);
+        const current = state.images.find((item) => item.shotId === id);
+        const next = buildImage(shot, index, (current?.revision || 1) + 1);
+        state.images = state.images.filter((item) => item.shotId !== id).concat(next).sort((a, b) => a.shotId - b.shotId);
+        state.image = "done";
+        state.clips = [];
+        state.video = "idle";
+        state.final = "idle";
+        render();
+      }
+      window.regenerateShot = regenerateShot;
+      function regenerateClip(id) {
+        const shot = state.storyboard.find((item) => item.id === id);
+        const index = state.storyboard.findIndex((item) => item.id === id);
+        const current = state.clips.find((item) => item.shotId === id);
+        const next = buildClip(shot, index, (current?.revision || 1) + 1);
+        state.clips = state.clips.filter((item) => item.shotId !== id).concat(next).sort((a, b) => a.shotId - b.shotId);
+        state.video = "done";
+        state.final = "idle";
+        render();
+      }
+      function confirmClips() {
+        state.video = "confirmed";
+        state.step = 6;
+        render();
+      }
+      function startVideoGeneration() {
+        state.video = "running";
+        state.final = "idle";
+        state.step = 5;
+        render();
+        setTimeout(() => {
+          state.clips = state.storyboard.map((shot, index) => buildClip(shot, index));
+          state.video = "done";
+          render();
+        }, 1100);
+      }
+      function regenerateRef(id) {
+        const asset = state.refs.find((item) => item.id === id);
+        const index = refTemplates.findIndex((item) => item.id === id);
+        const next = buildRef(asset, index, (asset?.revision || 1) + 1);
+        state.refs = state.refs.filter((item) => item.id !== id).concat(next).sort((a, b) => a.id.localeCompare(b.id));
+        state.refStatus = "done";
+        state.images = [];
+        state.image = "idle";
+        state.clips = [];
+        state.video = "idle";
+        state.final = "idle";
+        render();
+      }
+      function confirmRefs() {
+        state.refStatus = "confirmed";
+        state.step = 4;
+        render();
+      }
+      function confirmImages() {
+        state.image = "confirmed";
+        startVideoGeneration();
+      }
+      window.regenerateRef = regenerateRef;
+      window.confirmRefs = confirmRefs;
+      window.confirmImages = confirmImages;
+      window.regenerateClip = regenerateClip;
+      window.confirmClips = confirmClips;
+      function progress() {
+        if (state.final === "done") return 100;
+        if (state.final === "running") return 94;
+        if (state.video === "confirmed") return 88;
+        if (state.video === "done") return 82;
+        if (state.video === "running") return 78;
+        if (state.image === "confirmed") return 72;
+        if (state.image === "done") return 68;
+        if (state.refStatus === "confirmed") return 55;
+        if (state.refStatus === "done") return 46;
+        if (state.storyboard.length) return 34;
+        if (state.script) return 24;
+        return state.productImage ? 14 : 8;
+      }
+      function render() {
+        const pct = progress();
+        $("fill").style.width = pct + "%";
+        $("percent").textContent = pct + "%";
+        $("stage").textContent = `当前阶段：${state.step}/6`;
+        $("steps").innerHTML = stepNames.map((s, i) => `<span class="step ${state.step >= i + 1 ? "active" : ""}">${s}</span>`).join("");
+        const tasks = [
+          ["商品理解", state.script ? "完成" : state.productImage ? "待生成脚本" : "待输入"],
+          ["脚本确认", state.storyboard.length ? "已确认" : state.script ? "待确认" : "待生成"],
+          ["参考图确认", state.refStatus === "confirmed" ? "已确认" : state.refStatus === "done" ? "待确认" : state.refStatus === "running" ? "运行中" : "待执行"],
+          ["首帧图确认", state.image === "confirmed" ? "已确认" : state.image === "done" ? "待确认" : state.image === "running" ? "运行中" : "待参考图确认"],
+          ["分镜生成", state.video === "confirmed" ? "已确认" : state.video === "done" ? "待确认" : state.video === "running" ? "运行中" : "待首帧确认"],
+          ["成片", state.final === "done" ? "可导出" : state.final === "running" ? "运行中" : "待分镜确认"],
+        ];
+        $("tasks").innerHTML = tasks.map(([n, s]) => `<div class="task"><span>${n}</span><strong class="${s === "完成" || s === "可导出" || s === "已确认" ? "ok" : ""}">${s}</strong></div>`).join("");
+        $("refBtn").hidden = state.refs.length > 0;
+        $("refBtn").disabled = !state.storyboard.length || state.refStatus === "running";
+        $("imageBtn").disabled = state.refStatus !== "confirmed" || state.image === "running";
+        $("finalBtn").disabled = state.video !== "confirmed" || state.final === "running";
+        $("exportBtn").disabled = state.final !== "done";
+        $("references").innerHTML = state.refs.length ? `<div class="ref-section"><div class="ref-head"><h3>03 参考图确认</h3><span>${state.refStatus === "confirmed" ? "已确认" : "待确认"}</span></div><div class="ref-grid">${state.refs.map((asset) => `<article class="ref-card"><img src="${asset.imageUrl}" alt="${asset.name}" /><div><strong>${asset.name}</strong><p>${asset.usage}</p><small>${asset.outputPath}</small></div><button class="mini" onclick="regenerateRef('${asset.id}')">重新生成</button></article>`).join("")}</div>${state.refStatus !== "confirmed" ? `<button class="primary" style="width:100%" onclick="confirmRefs()">确认角色图和场景图</button>` : ""}</div>` : `<div class="empty compact">确认脚本后，调用 Seadream 5.0 生成角色图和场景图。</div>`;
+        $("frames").innerHTML = state.images.length ? `<div class="frame-section"><div class="ref-head"><h3>04 分镜首帧图确认</h3><span>${state.image === "confirmed" ? "已确认" : "待确认"}</span></div><div class="grid">${state.storyboard.map((shot) => { const image = state.images.find((item) => item.shotId === shot.id); return image ? `<article class="shot"><div class="cover"><img src="${image.imageUrl}" alt="${shot.title} 首帧" /><div class="cover-overlay"><strong>Shot ${shot.id}</strong><small>首帧已生成</small></div></div><div class="body"><div class="head"><strong>${shot.title}</strong><span>${shot.duration}s</span></div><p><strong>图片：</strong>${image.outputPath}</p><p><strong>Seed：</strong>${image.seed}</p><button class="mini" onclick="regenerateShot(${shot.id})">重新生成本张</button></div></article>` : ""; }).join("")}</div>${state.image !== "confirmed" ? `<button class="primary" style="width:100%" onclick="confirmImages()">确认分镜首帧图</button>` : ""}</div>` : `<div class="empty compact">确认参考图后，调用 Seadream 5.0 生成每个分镜首帧图。</div>`;
+        $("timeline").innerHTML = state.clips.length ? `<div class="video-grid">${state.storyboard.map((shot) => { const clip = state.clips.find((item) => item.shotId === shot.id); return clip ? `<article class="video-card"><div class="video-cover"><strong>Shot ${shot.id}</strong><small>${clip.model}</small></div><div class="video-body"><div class="head"><strong>${shot.title}</strong><span>${clip.duration}s</span></div><p><strong>视频：</strong>${clip.outputPath}</p><p><strong>Seed：</strong>${clip.seed}</p><button class="mini" onclick="regenerateClip(${shot.id})">重新生成本段</button></div></article>` : ""; }).join("")}</div>${state.video !== "confirmed" ? `<button class="primary" style="width:100%; margin-top:16px" onclick="confirmClips()">确认分镜视频</button>` : ""}` : state.storyboard.length ? `<div class="timeline">${state.storyboard.map((s) => `<div class="clip" style="flex-grow:${s.duration}">${s.id}</div>`).join("")}</div>` : "确认首帧图后调用 Seedance 2.0 生成分镜视频。";
+        $("screen").className = state.final === "done" ? "screen done" : "screen";
+        $("screen").innerHTML = state.final === "done" ? `<span>06 成片预览</span><strong>${readBrief().productName}</strong><small>字幕 + 配音 + BGM + 转场</small>` : state.video === "confirmed" ? "等待成片生成" : state.video === "done" ? "分镜视频待确认" : "等待分镜确认";
+      }
+      $("fileInput").addEventListener("change", (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        $("preview").src = URL.createObjectURL(file);
+        $("preview").hidden = false;
+        $("uploadText").hidden = true;
+        state.productImage = true;
+        render();
+      });
+      $("generateScript").onclick = $("regen").onclick = () => {
+        state.script = scriptTpl(readBrief());
+        state.storyboard = [];
+        state.refs = [];
+        state.refStatus = "idle";
+        state.images = [];
+        state.image = "idle";
+        state.clips = [];
+        state.video = "idle";
+        state.final = "idle";
+        state.step = 2;
+        $("scriptBox").innerHTML = `<textarea id="scriptText">${state.script}</textarea>`;
+        $("regen").disabled = false;
+        $("confirm").disabled = false;
+        render();
+      };
+      $("confirm").onclick = () => {
+        state.script = $("scriptText").value;
+        state.storyboard = shotsTpl(readBrief());
+        state.refs = [];
+        state.refStatus = "idle";
+        state.images = [];
+        state.image = "idle";
+        state.clips = [];
+        state.video = "idle";
+        state.final = "idle";
+        state.step = 3;
+        render();
+      };
+      $("refBtn").onclick = () => {
+        state.refStatus = "running";
+        state.images = [];
+        state.image = "idle";
+        state.clips = [];
+        state.video = "idle";
+        state.final = "idle";
+        state.step = 3;
+        render();
+        setTimeout(() => {
+          state.refs = refTemplates.map((asset, index) => buildRef(asset, index));
+          state.refStatus = "done";
+          render();
+        }, 900);
+      };
+      $("imageBtn").onclick = () => {
+        state.image = "running";
+        state.clips = [];
+        state.video = "idle";
+        state.final = "idle";
+        state.step = 4;
+        render();
+        const payload = {
+          skill: "script-to-storyboard-image",
+          model: "seadream5.0",
+          aspectRatio: readBrief().ratio,
+          script: state.script,
+          brief: readBrief(),
+          storyboard: state.storyboard,
+          referenceAssets: state.refs,
+        };
+        setTimeout(() => {
+          state.images = payload.storyboard.map((shot, index) => buildImage(shot, index));
+          state.image = "done";
+          render();
+        }, 900);
+      };
+      $("finalBtn").onclick = () => {
+        state.final = "running";
+        state.step = 6;
+        render();
+        setTimeout(() => {
+          state.final = "done";
+          render();
+        }, 900);
+      };
+      $("exportBtn").onclick = () => {
+        const blob = new Blob([JSON.stringify({ brief: readBrief(), script: state.script, storyboard: state.storyboard, referenceAssets: state.refs, storyboardImages: state.images, videoClips: state.clips }, null, 2)], { type: "application/json" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "story-workflow-project.json";
+        link.click();
+      };
+      render();
+    </script>
+  </body>
+</html>
