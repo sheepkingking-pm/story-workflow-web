@@ -17,6 +17,13 @@ npm run dev
 
 The Vite dev server proxies `/api` to `http://localhost:8787`.
 
+If the frontend is deployed separately from the API, configure the API origin at build time:
+
+```bash
+export VITE_API_BASE_URL="https://your-api.example.com"
+npm run build
+```
+
 To call a real script generator service, set:
 
 ```bash

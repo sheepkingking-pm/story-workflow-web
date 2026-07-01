@@ -44,6 +44,9 @@ const storyStyleOptions = [
   { value: '红果短剧爽文', label: '红果短剧爽文', hint: '高密度冲突、打脸爽点、强 CTA，适合转化导向' },
 ];
 
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+const apiUrl = (path) => `${apiBaseUrl}${path}`;
+
 const buildScript = (brief) => {
   return `## 抖音剧情带货脚本
 
@@ -356,7 +359,7 @@ function App() {
     setCurrentStep(2);
 
     try {
-      const response = await fetch('/api/scripts/generate', {
+      const response = await fetch(apiUrl('/api/scripts/generate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(brief),
