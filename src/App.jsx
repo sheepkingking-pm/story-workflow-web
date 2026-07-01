@@ -289,6 +289,11 @@ function App() {
   const [brief, setBrief] = useState(initialBrief);
   const [productPreview, setProductPreview] = useState('');
   const [script, setScript] = useState('');
+  const [generatedStoryboard, setGeneratedStoryboard] = useState([]);
+  const [scriptStatus, setScriptStatus] = useState('idle');
+  const [scriptError, setScriptError] = useState('');
+  const [scriptSource, setScriptSource] = useState('');
+  const [scriptWarnings, setScriptWarnings] = useState([]);
   const [storyboard, setStoryboard] = useState([]);
   const [referenceAssets, setReferenceAssets] = useState([]);
   const [referenceStatus, setReferenceStatus] = useState('idle');
@@ -333,8 +338,13 @@ function App() {
     setProductPreview(URL.createObjectURL(file));
   };
 
-  const handleGenerateScript = () => {
-    setScript(buildScript(brief));
+  const handleGenerateScript = async () => {
+    setScriptStatus('running');
+    setScriptError('');
+    setScriptSource('');
+    setScriptWarnings([]);
+    setScript('');
+    setGeneratedStoryboard([]);
     setStoryboard([]);
     setReferenceAssets([]);
     setReferenceStatus('idle');
@@ -344,10 +354,32 @@ function App() {
     setVideoStatus('idle');
     setFinalStatus('idle');
     setCurrentStep(2);
+
+    try {
+      const response = await fetch('/api/scripts/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(brief),
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.detail || result.message || '脚本生成失败');
+      }
+
+      setScript(result.scriptMarkdown || buildScript(brief));
+      setGeneratedStoryboard(Array.isArray(result.storyboard) ? result.storyboard : []);
+      setScriptSource(result.source || 'story-script-generator');
+      setScriptWarnings(Array.isArray(result.warnings) ? result.warnings : []);
+      setScriptStatus('done');
+    } catch (error) {
+      setScriptError(error.message || '脚本生成失败');
+      setScriptStatus('error');
+    }
   };
 
   const handleConfirmScript = () => {
-    setStoryboard(buildStoryboard(brief));
+    setStoryboard(generatedStoryboard.length ? generatedStoryboard : buildStoryboard(brief));
     setReferenceAssets([]);
     setReferenceStatus('idle');
     setStoryboardImages([]);
@@ -628,8 +660,8 @@ function App() {
             />
           </label>
 
-          <button className="primary-button full" onClick={handleGenerateScript}>
-            完成商品理解并生成脚本
+          <button className="primary-button full" disabled={scriptStatus === 'running'} onClick={handleGenerateScript}>
+            {scriptStatus === 'running' ? 'story-script-generator 生成中...' : '完成商品理解并生成脚本'}
           </button>
         </section>
 
@@ -640,18 +672,35 @@ function App() {
           </div>
 
           <div className="script-box">
-            {script ? (
+            {scriptStatus === 'running' ? (
+              <div className="empty-state">正在调用 /api/scripts/generate，等待 story-script-generator 返回脚本...</div>
+            ) : script ? (
               <textarea value={script} onChange={(event) => setScript(event.target.value)} />
             ) : (
               <div className="empty-state">填写左侧 brief 后，点击“用 story-script-generator 生成脚本”。</div>
             )}
           </div>
 
+          {scriptError && <div className="script-alert error">脚本生成失败：{scriptError}</div>}
+          {scriptSource && (
+            <div className="script-meta">
+              <strong>脚本来源</strong>
+              <span>{scriptSource}</span>
+            </div>
+          )}
+          {scriptWarnings.length > 0 && (
+            <div className="script-alert">
+              {scriptWarnings.map((warning) => (
+                <p key={warning}>{warning}</p>
+              ))}
+            </div>
+          )}
+
           <div className="action-row">
-            <button className="secondary-button" disabled={!script} onClick={handleGenerateScript}>
-              重新生成
+            <button className="secondary-button" disabled={!script || scriptStatus === 'running'} onClick={handleGenerateScript}>
+              {scriptStatus === 'running' ? '生成中...' : '重新生成'}
             </button>
-            <button className="primary-button" disabled={!script} onClick={handleConfirmScript}>
+            <button className="primary-button" disabled={!script || scriptStatus === 'running'} onClick={handleConfirmScript}>
               确认脚本，进入参考图确认
             </button>
           </div>
@@ -753,10 +802,14 @@ function App() {
               )}
             </div>
           )}
-          {!storyboardImages.length && <div className="empty-state compact">确认参考图后，调用 Seadream 5.0 生成每个分镜首帧图。</div>}
-          <button className="primary-button full" disabled={referenceStatus !== 'confirmed' || imageStatus === 'running'} onClick={runImageGeneration}>
-            调用 Seadream 5.0 生成首帧图
-          </button>
+          {!storyboardImages.length && (
+            <>
+              <div className="empty-state compact">确认参考图后，调用 Seadream 5.0 生成每个分镜首帧图。</div>
+              <button className="primary-button full" disabled={referenceStatus !== 'confirmed' || imageStatus === 'running'} onClick={runImageGeneration}>
+                调用 Seadream 5.0 生成首帧图
+              </button>
+            </>
+          )}
         </section>
 
         <section className="panel video-panel">

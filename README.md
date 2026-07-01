@@ -6,8 +6,26 @@
 
 ```bash
 npm install
+npm run dev:api
+```
+
+Open a second terminal:
+
+```bash
 npm run dev
 ```
+
+The Vite dev server proxies `/api` to `http://localhost:8787`.
+
+To call a real script generator service, set:
+
+```bash
+export STORY_SCRIPT_GENERATOR_API_URL="https://your-service.example.com/api/scripts/generate"
+export STORY_SCRIPT_GENERATOR_API_KEY="optional-token"
+npm run dev:api
+```
+
+Without `STORY_SCRIPT_GENERATOR_API_URL`, the Node API uses a local adapter that matches the `story-script-generator` input/output shape.
 
 ## GitHub Pages
 

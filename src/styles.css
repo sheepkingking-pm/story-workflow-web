@@ -402,6 +402,47 @@ textarea:focus {
   font-size: 14px;
 }
 
+.script-meta,
+.script-alert {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.script-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #315dff;
+  background: #eef2ff;
+}
+
+.script-meta span {
+  color: #5b6680;
+  word-break: break-all;
+}
+
+.script-alert {
+  color: #7a4a00;
+  background: #fff6df;
+}
+
+.script-alert.error {
+  color: #ad1f2b;
+  background: #fff0f2;
+}
+
+.script-alert p {
+  margin-bottom: 6px;
+}
+
+.script-alert p:last-child {
+  margin-bottom: 0;
+}
+
 .empty-state {
   display: grid;
   place-items: center;
