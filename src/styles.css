@@ -140,6 +140,26 @@ h1 {
   margin: 0 auto 18px;
 }
 
+.workflow-notices {
+  max-width: 1180px;
+  margin: 0 auto 18px;
+  padding: 12px 14px;
+  border: 1px solid #ffe0a3;
+  border-radius: 16px;
+  color: #7a4a00;
+  background: #fff8e8;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.workflow-notices p {
+  margin-bottom: 6px;
+}
+
+.workflow-notices p:last-child {
+  margin-bottom: 0;
+}
+
 .progress-header {
   display: flex;
   justify-content: space-between;

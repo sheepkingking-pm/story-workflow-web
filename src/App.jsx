@@ -46,246 +46,19 @@ const storyStyleOptions = [
 
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 const apiUrl = (path) => `${apiBaseUrl}${path}`;
-
-const buildScript = (brief) => {
-  return `## 抖音剧情带货脚本
-
-- 商品：${brief.productName}
-- 时长：${brief.duration}s
-- 平台：抖音
-- 目标人群：${brief.audience}
-- 核心痛点：重要场合前妆面暗沉、状态疲惫、来不及完整化妆
-- 核心卖点：${brief.sellingPoints}
-- 人物：女主 1 人，同事 1 人，客户/领导 1 人
-- 场景：办公室洗手间、会议室、会议室外走廊
-- 剧情模型：痛点救场 + 状态反转 + 同事追问种草
-- 剧情风格：${brief.storyStyle}
-- 自然语言指令：${brief.extraInstruction}
-- 转化目标：引导点击购物车/商品卡，突出通勤包常备
-
-### 一句话剧情
-
-女主下班前被临时通知参加重要客户会，脸上疲惫、妆面暗沉。她本想放弃，却在包里拿出「${brief.productName}」快速补妆。三分钟后，她自信走进会议室，用专业表达扭转局面。结尾同事惊讶追问，她轻松展示商品，形成种草转化。
-
-### 分镜脚本
-
-| 时间 | 剧情画面 | 台词/字幕 | 商品露出 | 镜头/声音 |
-| --- | --- | --- | --- | --- |
-| 0-3s | 女主看着镜子里的疲惫妆面，手机弹出“客户会提前 3 分钟后开始” | 字幕：妆都花了，会议却提前了？ | 无 | 镜面近景，通知音，快速推近 |
-| 3-8s | 女主翻包，表情慌张，同事在门口催她 | 同事：快点，客户已经到了！ | 包中弱露出 | 手持快切，制造紧张 |
-| 8-16s | 女主拿出${brief.productName}，打开粉扑轻拍补妆 | 女主：三分钟，够不够把状态救回来？ | 产品正面特写 | 产品开盖声，脸部/手部特写 |
-| 16-24s | 妆面从暗沉变得更自然，女主整理外套走向会议室 | 字幕：遮瑕、保湿、持妆，通勤补妆不用慌 | 强露出 + 使用动作 | 前后状态对比，节奏加快 |
-| 24-${brief.duration}s | 女主会议表现从容，结束后同事追问，她笑着拿出商品 | 女主：不是换了人，是换回我的状态。小黄车有。 | 结尾商品定格 | 音乐起，商品卡/CTA 字幕 |
-
-### 备选开头
-- 痛点型：妆花了不可怕，可怕的是客户已经到门口了。
-- 反差型：三分钟前她还想逃会，三分钟后客户主动点头。
-- 冲突型：同事一句“你现在这样能见客户吗？”直接把她问懵。
-- 结果前置型：她只补了 3 分钟，客户却以为她准备了一下午。
-
-### CTA 版本
-- 想把状态随身带着的，直接看小黄车。
-- 通勤包里放一个，临时救场真的省心。
-- 今天有活动，想试的别等妆花了再想起它。
-
-### 拍摄建议
-- 人物控制在 2-3 个，尽量用办公室一个主场景完成。
-- 商品至少出现 3 次：包内弱露出、使用强露出、结尾定格。
-- 避免绝对化功效表达，用“状态更自然”“日常补妆更省心”等合规表达。
-
-### 自然语言指令
-${brief.extraInstruction}`;
-};
-
-const buildStoryboard = (brief) => [
-  {
-    id: 1,
-    title: '疲惫钩子',
-    duration: 4,
-    scene: '办公室洗手间镜前',
-    camera: '近景，镜面反射，轻微推近',
-    visual: '女主看着暗沉妆面，手机弹出客户会提前提醒。',
-    dialogue: '重要时刻，偏偏状态最差。',
-    product: '商品未出现，制造冲突。',
-    imagePrompt: `vertical frame, tired office woman in mirror, modern restroom, ${brief.storyStyle}, cinematic lighting`,
-    videoPrompt: 'woman looks at mirror, phone notification pops up, subtle camera push in',
-  },
-  {
-    id: 2,
-    title: '三分钟补救',
-    duration: 6,
-    scene: '洗手台前',
-    camera: '手部特写，产品特写，快速切换',
-    visual: `女主从包里拿出${brief.productName}，轻拍脸颊完成补妆。`,
-    dialogue: '三分钟，够不够把状态救回来？',
-    product: '商品正面清晰露出，强调便携和快速补妆。',
-    imagePrompt: `beauty product close up, compact cushion in hand, clean counter, premium cosmetic ad, ${brief.ratio}`,
-    videoPrompt: 'hand opens compact, sponge taps face, soft glow appears on skin',
-  },
-  {
-    id: 3,
-    title: '状态反转',
-    duration: 7,
-    scene: '会议室门口到会议室内',
-    camera: '中景跟拍，进门后轻微环绕',
-    visual: '女主从容走进会议室，妆面自然透亮，客户抬头关注。',
-    dialogue: '遮住疲惫，也把自信补回来。',
-    product: '商品不直接出现，用状态变化承接卖点。',
-    imagePrompt: `confident office woman entering meeting room, natural bright makeup, urban drama, ${brief.storyStyle}`,
-    videoPrompt: 'woman walks into meeting room confidently, clients look impressed, smooth tracking shot',
-  },
-  {
-    id: 4,
-    title: '同事追问',
-    duration: 6,
-    scene: '会议结束后的走廊',
-    camera: '双人中近景，轻松对话',
-    visual: '同事惊讶追问女主状态变化，女主笑着拿出商品。',
-    dialogue: '不是换了人，是换回了我的状态。',
-    product: '商品再次露出，形成记忆点。',
-    imagePrompt: `two office women chatting in hallway, cosmetic compact reveal, light comedy, vertical composition`,
-    videoPrompt: 'colleague asks surprised, heroine smiles and reveals compact product',
-  },
-  {
-    id: 5,
-    title: '转化收口',
-    duration: 7,
-    scene: '干净产品台面',
-    camera: '产品英雄镜头，字幕叠加',
-    visual: `商品置于通勤包旁，字幕展示“${brief.sellingPoints}”。`,
-    dialogue: '通勤包里的状态开关。',
-    product: '商品居中，配合卖点字幕和购买引导。',
-    imagePrompt: `hero product shot of ${brief.productName}, commuter bag, soft blue background, premium ecommerce visual`,
-    videoPrompt: 'slow product rotation, clean light sweep, text callouts for key selling points',
-  },
-];
-
-const buildMockImageUrl = (shot, seed) => {
-  const colors = ['#586dff', '#28c7ac', '#7049ff', '#ff9f43', '#2f80ed'];
-  const bg = colors[(shot.id - 1) % colors.length];
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="720" height="1280" viewBox="0 0 720 1280">
-      <defs>
-        <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0" stop-color="${bg}"/>
-          <stop offset="1" stop-color="#101624"/>
-        </linearGradient>
-      </defs>
-      <rect width="720" height="1280" fill="url(#bg)"/>
-      <circle cx="570" cy="180" r="150" fill="rgba(255,255,255,0.14)"/>
-      <rect x="90" y="260" width="540" height="620" rx="42" fill="rgba(255,255,255,0.16)"/>
-      <text x="360" y="430" fill="white" font-family="Arial" font-size="54" font-weight="700" text-anchor="middle">Shot ${shot.id}</text>
-      <text x="360" y="520" fill="white" font-family="Arial" font-size="34" font-weight="700" text-anchor="middle">${shot.title}</text>
-      <text x="360" y="610" fill="rgba(255,255,255,0.82)" font-family="Arial" font-size="24" text-anchor="middle">seadream5.0 preview</text>
-      <text x="360" y="704" fill="rgba(255,255,255,0.72)" font-family="Arial" font-size="22" text-anchor="middle">seed ${seed}</text>
-      <rect x="130" y="955" width="460" height="96" rx="48" fill="rgba(255,255,255,0.2)"/>
-      <text x="360" y="1016" fill="white" font-family="Arial" font-size="26" font-weight="700" text-anchor="middle">首帧分镜图</text>
-    </svg>
-  `;
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-};
-
-const buildMockImage = (shot, index, payload, revision = 1) => {
-  const seed = 2026062200 + index + (revision - 1) * 100;
-
-  return {
-    shotId: shot.id,
-    model: payload.model,
-    skill: payload.skill,
-    status: 'done',
-    seed,
-    revision,
-    imageUrl: buildMockImageUrl(shot, seed),
-    outputPath: `storyboard_images/frame_${String(index + 1).padStart(2, '0')}_v${revision}.png`,
-    prompt: shot.imagePrompt,
-    negativePrompt:
-      'low quality, blurry, distorted face, extra fingers, wrong packaging, unreadable text, watermark',
-  };
-};
-
-const buildMockReferenceUrl = (asset, seed) => {
-  const colors = {
-    character: '#586dff',
-    scene: '#28c7ac',
-  };
-  const bg = colors[asset.type] || '#7049ff';
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="720" height="960" viewBox="0 0 720 960">
-      <defs>
-        <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0" stop-color="${bg}"/>
-          <stop offset="1" stop-color="#101624"/>
-        </linearGradient>
-      </defs>
-      <rect width="720" height="960" fill="url(#bg)"/>
-      <rect x="72" y="132" width="576" height="560" rx="44" fill="rgba(255,255,255,0.16)"/>
-      <circle cx="360" cy="324" r="96" fill="rgba(255,255,255,0.22)"/>
-      <rect x="230" y="450" width="260" height="150" rx="75" fill="rgba(255,255,255,0.18)"/>
-      <text x="360" y="760" fill="white" font-family="Arial" font-size="42" font-weight="700" text-anchor="middle">${asset.name}</text>
-      <text x="360" y="820" fill="rgba(255,255,255,0.78)" font-family="Arial" font-size="24" text-anchor="middle">${asset.id} · seed ${seed}</text>
-    </svg>
-  `;
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-};
-
-const buildMockReferenceAsset = (asset, index, revision = 1) => {
-  const seed = 2026062300 + index + (revision - 1) * 100;
-
-  return {
-    ...asset,
-    status: 'done',
-    seed,
-    revision,
-    imageUrl: buildMockReferenceUrl(asset, seed),
-    outputPath: `storyboard_references/${asset.type}s/${asset.id}_v${revision}.png`,
-  };
-};
-
-const referenceTemplates = [
-  { id: 'character_01', type: 'character', name: '女主角色图', usage: '主角一致性，通勤女性，白衬衫，低马尾' },
-  { id: 'character_02', type: 'character', name: '同事角色图', usage: '配角一致性，职场同事，轻喜剧反应' },
-  { id: 'scene_01', type: 'scene', name: '办公室洗手间', usage: '钩子与补妆场景' },
-  { id: 'scene_02', type: 'scene', name: '会议室', usage: '状态反转与客户会议场景' },
-  { id: 'scene_03', type: 'scene', name: '走廊/收口场景', usage: '同事追问与商品种草场景' },
-];
-
-const mockReferenceAssetApi = () =>
-  new Promise((resolve) => {
-    window.setTimeout(() => {
-      resolve({
-        taskId: `ref_${Date.now()}`,
-        skill: 'script-to-storyboard-image',
-        model: 'seadream5.0',
-        assets: referenceTemplates.map((asset, index) => buildMockReferenceAsset(asset, index)),
-      });
-    }, 900);
+const apiPost = async (path, payload) => {
+  const response = await fetch(apiUrl(path), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
   });
+  const result = await response.json();
 
-const mockStoryboardImageApi = (payload) =>
-  new Promise((resolve) => {
-    window.setTimeout(() => {
-      resolve({
-        taskId: `img_${Date.now()}`,
-        skill: payload.skill,
-        model: payload.model,
-        images: payload.storyboard.map((shot, index) => buildMockImage(shot, index, payload)),
-      });
-    }, 900);
-  });
+  if (!response.ok) {
+    throw new Error(result.detail || result.message || '请求失败');
+  }
 
-const buildMockVideoClip = (shot, index, revision = 1) => {
-  const seed = 2026062400 + index + (revision - 1) * 100;
-
-  return {
-    shotId: shot.id,
-    status: 'done',
-    model: 'seedance2.0',
-    seed,
-    revision,
-    duration: shot.duration,
-    outputPath: `storyboard_videos/shot_${String(index + 1).padStart(2, '0')}_v${revision}.mp4`,
-    prompt: shot.videoPrompt,
-  };
+  return result;
 };
 
 function App() {
@@ -305,6 +78,8 @@ function App() {
   const [videoClips, setVideoClips] = useState([]);
   const [videoStatus, setVideoStatus] = useState('idle');
   const [finalStatus, setFinalStatus] = useState('idle');
+  const [finalCut, setFinalCut] = useState(null);
+  const [workflowMessages, setWorkflowMessages] = useState([]);
   const [currentStep, setCurrentStep] = useState(1);
 
   const progress = useMemo(() => {
@@ -325,11 +100,20 @@ function App() {
   const tasks = [
     { name: '商品理解', status: script ? '完成' : productPreview ? '待生成脚本' : '待输入' },
     { name: '脚本确认', status: storyboard.length ? '已确认' : script ? '待确认' : '待生成' },
-    { name: '参考图确认', status: referenceStatus === 'confirmed' ? '已确认' : referenceStatus === 'done' ? '待确认' : referenceStatus === 'running' ? '运行中' : '待执行' },
-    { name: '首帧图确认', status: imageStatus === 'confirmed' ? '已确认' : imageStatus === 'done' ? '待确认' : imageStatus === 'running' ? '运行中' : '待参考图确认' },
-    { name: '分镜生成', status: videoStatus === 'confirmed' ? '已确认' : videoStatus === 'done' ? '待确认' : videoStatus === 'running' ? '运行中' : '待首帧确认' },
-    { name: '成片', status: finalStatus === 'done' ? '可导出' : finalStatus === 'running' ? '运行中' : '待分镜确认' },
+    { name: '参考图确认', status: referenceStatus === 'error' ? '失败' : referenceStatus === 'confirmed' ? '已确认' : referenceStatus === 'done' ? '待确认' : referenceStatus === 'running' ? '运行中' : '待执行' },
+    { name: '首帧图确认', status: imageStatus === 'error' ? '失败' : imageStatus === 'confirmed' ? '已确认' : imageStatus === 'done' ? '待确认' : imageStatus === 'running' ? '运行中' : '待参考图确认' },
+    { name: '分镜生成', status: videoStatus === 'error' ? '失败' : videoStatus === 'confirmed' ? '已确认' : videoStatus === 'done' ? '待确认' : videoStatus === 'running' ? '运行中' : '待首帧确认' },
+    { name: '成片', status: finalStatus === 'error' ? '失败' : finalStatus === 'done' ? '可导出' : finalStatus === 'running' ? '运行中' : '待分镜确认' },
   ];
+
+  const applyWorkflowMessages = (result) => {
+    const messages = [
+      result.source ? `调用来源：${result.source}` : '',
+      ...(Array.isArray(result.warnings) ? result.warnings : []),
+    ].filter(Boolean);
+
+    setWorkflowMessages(messages);
+  };
 
   const updateBrief = (field, value) => {
     setBrief((prev) => ({ ...prev, [field]: value }));
@@ -356,6 +140,8 @@ function App() {
     setVideoClips([]);
     setVideoStatus('idle');
     setFinalStatus('idle');
+    setFinalCut(null);
+    setWorkflowMessages([]);
     setCurrentStep(2);
 
     try {
@@ -370,8 +156,12 @@ function App() {
         throw new Error(result.detail || result.message || '脚本生成失败');
       }
 
-      setScript(result.scriptMarkdown || buildScript(brief));
+      if (!result.scriptMarkdown) {
+        throw new Error('脚本接口未返回 scriptMarkdown');
+      }
+
       setGeneratedStoryboard(Array.isArray(result.storyboard) ? result.storyboard : []);
+      setScript(result.scriptMarkdown);
       setScriptSource(result.source || 'story-script-generator');
       setScriptWarnings(Array.isArray(result.warnings) ? result.warnings : []);
       setScriptStatus('done');
@@ -382,7 +172,12 @@ function App() {
   };
 
   const handleConfirmScript = () => {
-    setStoryboard(generatedStoryboard.length ? generatedStoryboard : buildStoryboard(brief));
+    if (!generatedStoryboard.length) {
+      setScriptError('脚本接口未返回 storyboard，无法进入参考图生成。');
+      return;
+    }
+
+    setStoryboard(generatedStoryboard);
     setReferenceAssets([]);
     setReferenceStatus('idle');
     setStoryboardImages([]);
@@ -390,6 +185,7 @@ function App() {
     setVideoClips([]);
     setVideoStatus('idle');
     setFinalStatus('idle');
+    setFinalCut(null);
     setCurrentStep(3);
   };
 
@@ -400,19 +196,23 @@ function App() {
     setVideoClips([]);
     setVideoStatus('idle');
     setFinalStatus('idle');
+    setFinalCut(null);
     setCurrentStep(3);
 
-    const result = await mockReferenceAssetApi({
-      skill: 'script-to-storyboard-image',
-      model: 'seadream5.0',
-      aspectRatio: brief.ratio,
-      script,
-      brief,
-      storyboard,
-    });
+    try {
+      const result = await apiPost('/api/storyboard-references/generate', {
+        script,
+        brief,
+        storyboard,
+      });
 
-    setReferenceAssets(result.assets);
-    setReferenceStatus('done');
+      setReferenceAssets(result.assets || []);
+      applyWorkflowMessages(result);
+      setReferenceStatus('done');
+    } catch (error) {
+      setWorkflowMessages([`参考图生成失败：${error.message}`]);
+      setReferenceStatus('error');
+    }
   };
 
   const confirmReferenceAssets = () => {
@@ -420,21 +220,33 @@ function App() {
     setCurrentStep(4);
   };
 
-  const regenerateReferenceAsset = (asset) => {
-    const assetIndex = referenceTemplates.findIndex((item) => item.id === asset.id);
-    const nextRevision = (asset.revision || 1) + 1;
-    const nextAsset = buildMockReferenceAsset(asset, assetIndex, nextRevision);
+  const regenerateReferenceAsset = async (asset) => {
+    setReferenceStatus('running');
 
-    setReferenceAssets((prev) => {
-      const rest = prev.filter((item) => item.id !== asset.id);
-      return [...rest, nextAsset].sort((a, b) => a.id.localeCompare(b.id));
-    });
-    setReferenceStatus('done');
-    setStoryboardImages([]);
-    setImageStatus('idle');
-    setVideoClips([]);
-    setVideoStatus('idle');
-    setFinalStatus('idle');
+    try {
+      const result = await apiPost('/api/storyboard-references/regenerate', {
+        asset,
+        script,
+        brief,
+        storyboard,
+      });
+
+      setReferenceAssets((prev) => {
+        const rest = prev.filter((item) => item.id !== asset.id);
+        return [...rest, result.asset].sort((a, b) => a.id.localeCompare(b.id));
+      });
+      applyWorkflowMessages(result);
+      setReferenceStatus('done');
+      setStoryboardImages([]);
+      setImageStatus('idle');
+      setVideoClips([]);
+      setVideoStatus('idle');
+      setFinalStatus('idle');
+      setFinalCut(null);
+    } catch (error) {
+      setWorkflowMessages([`参考图重新生成失败：${error.message}`]);
+      setReferenceStatus('error');
+    }
   };
 
   const runImageGeneration = async () => {
@@ -442,21 +254,24 @@ function App() {
     setVideoClips([]);
     setVideoStatus('idle');
     setFinalStatus('idle');
+    setFinalCut(null);
     setCurrentStep(4);
 
-    const payload = {
-      skill: 'script-to-storyboard-image',
-      model: 'seadream5.0',
-      aspectRatio: brief.ratio,
-      script,
-      brief,
-      storyboard,
-      referenceAssets,
-    };
+    try {
+      const result = await apiPost('/api/storyboard-images/generate', {
+        script,
+        brief,
+        storyboard,
+        referenceAssets,
+      });
 
-    const result = await mockStoryboardImageApi(payload);
-    setStoryboardImages(result.images);
-    setImageStatus('done');
+      setStoryboardImages(result.images || []);
+      applyWorkflowMessages(result);
+      setImageStatus('done');
+    } catch (error) {
+      setWorkflowMessages([`分镜首帧图生成失败：${error.message}`]);
+      setImageStatus('error');
+    }
   };
 
   const confirmStoryboardImages = () => {
@@ -464,48 +279,85 @@ function App() {
     runVideoGeneration();
   };
 
-  const regenerateShotImage = (shot) => {
-    const shotIndex = storyboard.findIndex((item) => item.id === shot.id);
+  const regenerateShotImage = async (shot) => {
     const currentImage = storyboardImages.find((image) => image.shotId === shot.id);
-    const payload = {
-      skill: 'script-to-storyboard-image',
-      model: 'seadream5.0',
-    };
-    const nextRevision = (currentImage?.revision || 1) + 1;
-    const nextImage = buildMockImage(shot, shotIndex, payload, nextRevision);
+    setImageStatus('running');
 
-    setStoryboardImages((prev) => {
-      const rest = prev.filter((image) => image.shotId !== shot.id);
-      return [...rest, nextImage].sort((a, b) => a.shotId - b.shotId);
-    });
-    setImageStatus('done');
-    setVideoClips([]);
-    setVideoStatus('idle');
-    setFinalStatus('idle');
+    try {
+      const result = await apiPost('/api/storyboard-images/regenerate', {
+        shot,
+        currentImage,
+        script,
+        brief,
+        storyboard: [shot],
+        referenceAssets,
+      });
+
+      setStoryboardImages((prev) => {
+        const rest = prev.filter((image) => image.shotId !== shot.id);
+        return [...rest, result.image].sort((a, b) => a.shotId - b.shotId);
+      });
+      applyWorkflowMessages(result);
+      setImageStatus('done');
+      setVideoClips([]);
+      setVideoStatus('idle');
+      setFinalStatus('idle');
+      setFinalCut(null);
+    } catch (error) {
+      setWorkflowMessages([`分镜首帧图重新生成失败：${error.message}`]);
+      setImageStatus('error');
+    }
   };
 
-  const runVideoGeneration = () => {
+  const runVideoGeneration = async () => {
     setVideoStatus('running');
     setFinalStatus('idle');
+    setFinalCut(null);
     setCurrentStep(5);
-    window.setTimeout(() => {
-      setVideoClips(storyboard.map((shot, index) => buildMockVideoClip(shot, index)));
+
+    try {
+      const result = await apiPost('/api/videos/generate', {
+        script,
+        brief,
+        storyboard,
+        storyboardImages,
+      });
+
+      setVideoClips(result.clips || []);
+      applyWorkflowMessages(result);
       setVideoStatus('done');
-    }, 1100);
+    } catch (error) {
+      setWorkflowMessages([`分镜视频生成失败：${error.message}`]);
+      setVideoStatus('error');
+    }
   };
 
-  const regenerateVideoClip = (shot) => {
-    const shotIndex = storyboard.findIndex((item) => item.id === shot.id);
+  const regenerateVideoClip = async (shot) => {
     const currentClip = videoClips.find((clip) => clip.shotId === shot.id);
-    const nextRevision = (currentClip?.revision || 1) + 1;
-    const nextClip = buildMockVideoClip(shot, shotIndex, nextRevision);
+    setVideoStatus('running');
 
-    setVideoClips((prev) => {
-      const rest = prev.filter((clip) => clip.shotId !== shot.id);
-      return [...rest, nextClip].sort((a, b) => a.shotId - b.shotId);
-    });
-    setVideoStatus('done');
-    setFinalStatus('idle');
+    try {
+      const result = await apiPost('/api/videos/regenerate', {
+        shot,
+        currentClip,
+        script,
+        brief,
+        storyboard: [shot],
+        storyboardImages,
+      });
+
+      setVideoClips((prev) => {
+        const rest = prev.filter((clip) => clip.shotId !== shot.id);
+        return [...rest, result.clip].sort((a, b) => a.shotId - b.shotId);
+      });
+      applyWorkflowMessages(result);
+      setVideoStatus('done');
+      setFinalStatus('idle');
+      setFinalCut(null);
+    } catch (error) {
+      setWorkflowMessages([`分镜视频重新生成失败：${error.message}`]);
+      setVideoStatus('error');
+    }
   };
 
   const confirmVideoClips = () => {
@@ -513,12 +365,25 @@ function App() {
     setCurrentStep(6);
   };
 
-  const runFinalGeneration = () => {
+  const runFinalGeneration = async () => {
     setFinalStatus('running');
     setCurrentStep(6);
-    window.setTimeout(() => {
+
+    try {
+      const result = await apiPost('/api/final-cuts/generate', {
+        script,
+        brief,
+        storyboard,
+        videoClips,
+      });
+
+      setFinalCut(result.finalCut || null);
+      applyWorkflowMessages(result);
       setFinalStatus('done');
-    }, 900);
+    } catch (error) {
+      setWorkflowMessages([`成片生成失败：${error.message}`]);
+      setFinalStatus('error');
+    }
   };
 
   const exportProject = () => {
@@ -529,6 +394,7 @@ function App() {
       referenceAssets,
       storyboardImages,
       videoClips,
+      finalCut,
       modelPlan: {
         storyboardSkill: 'script-to-storyboard-image',
         imageModel: 'seadream5.0',
@@ -592,6 +458,14 @@ function App() {
           </div>
         ))}
       </section>
+
+      {workflowMessages.length > 0 && (
+        <section className="workflow-notices">
+          {workflowMessages.map((message) => (
+            <p key={message}>{message}</p>
+          ))}
+        </section>
+      )}
 
       <main className="workspace">
         <section className="panel brief-panel">
@@ -730,6 +604,7 @@ function App() {
                       <strong>{asset.name}</strong>
                       <p>{asset.usage}</p>
                       <small>{asset.outputPath}</small>
+                      {asset.source && <small>来源：{asset.source}</small>}
                     </div>
                     <button className="mini-button" type="button" onClick={() => regenerateReferenceAsset(asset)}>
                       重新生成
@@ -789,6 +664,8 @@ function App() {
                           <dd>{shotImage.outputPath}</dd>
                           <dt>Seed</dt>
                           <dd>{shotImage.seed}</dd>
+                          <dt>来源</dt>
+                          <dd>{shotImage.source}</dd>
                         </dl>
                         <button className="mini-button" type="button" onClick={() => regenerateShotImage(shot)}>
                           重新生成本张
@@ -844,6 +721,8 @@ function App() {
                           <dd>{clip.outputPath}</dd>
                           <dt>Seed</dt>
                           <dd>{clip.seed}</dd>
+                          <dt>来源</dt>
+                          <dd>{clip.source}</dd>
                         </dl>
                         <button className="mini-button" type="button" onClick={() => regenerateVideoClip(shot)}>
                           重新生成本段
@@ -870,6 +749,11 @@ function App() {
               确认分镜视频
             </button>
           ) : null}
+          {videoStatus === 'error' ? (
+            <button className="primary-button full" type="button" onClick={runVideoGeneration}>
+              重新生成分镜视频
+            </button>
+          ) : null}
         </section>
 
         <section className="panel final-panel">
@@ -885,7 +769,7 @@ function App() {
                 <div className="final-preview">
                   <span>06 成片预览</span>
                   <strong>{brief.productName}</strong>
-                  <small>字幕 + 配音 + BGM + 转场</small>
+                  <small>{finalCut?.outputPath || '字幕 + 配音 + BGM + 转场'}</small>
                 </div>
               ) : (
                 <div className="pending-preview">{videoStatus === 'confirmed' ? '等待成片生成' : '等待分镜确认'}</div>
