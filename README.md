@@ -62,9 +62,20 @@ Local adapters only keep the workflow testable. They do not call real models.
 
 ## Online Deployment
 
-GitHub Pages can only host the static frontend. For real skill/model calls, deploy `server/index.js` to a Node-capable service, configure the environment variables above on that service, then build the frontend with `VITE_API_BASE_URL` pointing to that backend.
+Recommended: deploy this repository as one Node Web Service. The service runs `server/index.js`, serves the built frontend from `dist`, and exposes all `/api/*` routes from the same domain.
+
+```bash
+npm ci
+npm run build
+npm start
+```
+
+Render can use the included `render.yaml`. Docker/container platforms can use the included `Dockerfile`.
+
+GitHub Pages can only host the static frontend. If you keep GitHub Pages as the frontend, deploy `server/index.js` to a Node-capable service, configure the environment variables above on that service, then build the frontend with `VITE_API_BASE_URL` pointing to that backend.
 
 See `docs/online-real-workflow.md` for the full production call chain and model gateway contracts.
+See `docs/deploy-node-backend.md` for Render, Railway, Docker, and GitHub Pages deployment options.
 
 ## GitHub Pages
 

@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: story-workflow-web
+    runtime: node
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CORS_ORIGIN
+        sync: false
+      - key: STORY_SCRIPT_GENERATOR_API_URL
+        sync: false
+      - key: STORY_SCRIPT_GENERATOR_API_KEY
+        sync: false
+      - key: STORYBOARD_IMAGE_SKILL_API_URL
+        sync: false
+      - key: STORYBOARD_IMAGE_SKILL_API_KEY
+        sync: false
+      - key: VIDEO_FINISHER_SKILL_API_URL
+        sync: false
+      - key: VIDEO_FINISHER_SKILL_API_KEY
+        sync: false
+      - key: SEADREAM_API_URL
+        sync: false
+      - key: SEADREAM_API_KEY
+        sync: false
+      - key: SEEDANCE_API_URL
+        sync: false
+      - key: SEEDANCE_API_KEY
+        sync: false
